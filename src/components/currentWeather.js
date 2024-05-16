@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import '../components/currentWeather.css';
+import Historico from './historico/historico';
 
 function CurrentWeather() {
     const [data, setData] = useState({});
+    const [dataHistorico, setDataHistorico] = useState([]);
     const [location, setLocation] = useState('');
     const [loading, setLoading] = useState(false);
+    const [searched, setSearched] = useState(false);
     const [error, setError] = useState('');
 
     const searchLocation = () => {
@@ -12,6 +15,7 @@ function CurrentWeather() {
 
         const apiKey = '7d8ea7d8e5a391ae9352e4fb5a1d9e3c';
         const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&lang=Es&appid=${apiKey}`;
+
         fetch(url)
             .then(response => {
                 if (!response.ok) {
@@ -21,6 +25,40 @@ function CurrentWeather() {
             })
             .then(data => {
                 setData(data);
+                setSearched(true);
+                getHistorico(location);
+            })
+            .catch(error => {
+                setError('Ubicación no encontrada');
+                setLoading(false);
+                console.error('Error fetching weather data:', error);
+            });
+    };
+
+    const getHistorico = (location) => {
+        const apiKey = '7d8ea7d8e5a391ae9352e4fb5a1d9e3c';
+        const urlHistorico = `https://api.openweathermap.org/data/2.5/forecast?q=${location}&lang=Es&appid=${apiKey}`;
+
+        fetch(urlHistorico)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Ubicación no encontrada');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const newDataHistorico = [];
+
+                data.list.forEach(item => {
+                    const fechaHora = item.dt_txt;
+                    const partes = fechaHora.split(' ');
+                    const hora = partes[1];
+                    if (hora === '15:00:00') {
+                        newDataHistorico.push(item);
+                    }
+                });
+                setDataHistorico([...newDataHistorico]);
+
                 setLoading(false);
             })
             .catch(error => {
@@ -29,6 +67,7 @@ function CurrentWeather() {
                 console.error('Error fetching weather data:', error);
             });
     };
+
     const handleKeyPress = event => {
         if (event.key === 'Enter') {
             searchLocation();
@@ -36,15 +75,32 @@ function CurrentWeather() {
     };
     return (
         <div className="App">
-            <div className="search">
-                <input
-                    value={location}
-                    type="text"
-                    onChange={event => setLocation(event.target.value)}
-                    onKeyDown={handleKeyPress}
-                    placeholder="Ingrese Ubicación"
-                />
-            </div>
+            {searched ? (
+                <div className="search">
+                    <input
+                        value={location}
+                        type="text"
+                        onChange={event => setLocation(event.target.value)}
+                        onKeyDown={handleKeyPress}
+                        placeholder="Ingrese Ubicación"
+                    />
+                </div>
+            ) : (
+                <div className='containerSearch'>
+                    <div className='firstSearch'>
+                        <h1>Buscar Ciudad</h1>
+                        <input
+                            value={location}
+                            type="text"
+                            className='input'
+                            onChange={event => setLocation(event.target.value)}
+                            onKeyDown={handleKeyPress}
+                            placeholder="Ingrese Ubicación"
+                        />
+                    </div>
+                </div>
+            )}
+
             <div className="container">
                 <div className="top">
                     <div className="location">
@@ -79,6 +135,19 @@ function CurrentWeather() {
                                     <p className="bold">{data.wind && `${data.wind.speed} m/s`}</p>
                                     <p>Viento</p>
                                 </div>
+                            </div>
+                        )}
+                    </>
+                )}
+                {loading ? (
+                    <div>Cargando...</div>
+                ) : (
+                    <>
+                        {error && <div>{error}</div>}
+                        {Object.keys(data).length !== 0 && (
+                            <div className="left2">
+                                <h1>Pronóstico Del Tiempo</h1>
+                                <Historico datos={dataHistorico} />
                             </div>
                         )}
                     </>

@@ -5,7 +5,9 @@ import CurrentWeather from './components/currentWeather';
 function App() {
 
   return (
-    <CurrentWeather />
+    <div>
+      <CurrentWeather />
+    </div>
 
   );
 }
